@@ -11,6 +11,6 @@
 
 # Run Tracker
 	cd tracker
-	py yolo_tracker.py -c {class_name} -v {video path} -ch {chainage csv file} -s {true} 
-	
-	Ex: py yolo_tracker.py -c bush -v ..\video.mp4 -ch ..\video.csv -s true
+	py yolo_tracker.py -c {class_name} -v {video path} -dr {disapper_rate} -c {confidence}
+
+	-dr = disapper_rate - minimum number of frames to disapper that id and start new one (if dr=10 , if object doesn't appear for 10 frames then it has to ignore the id of that object )

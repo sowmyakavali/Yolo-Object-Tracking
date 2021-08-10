@@ -6,25 +6,21 @@
 import os
 import cv2
 import sys
+import argparse
 
-sys.path.append(os.path.realpath(".."))
+base_path = os.path.realpath("..")
+sys.path.append(base_path)
 
 from lib.utils import DrawBBoxes
 from lib.bbox_filters import NMSIdxToBBox
 from tracker.centroid_tracker import CentroidTracker
 from lib.depth_estimator import NearestObject, DrawDepthMeter
 
-# Golbal variables
-id_alias = {"signboard": "SB", "streetlight": "ST", "plantation": "PL"}
-dis_rate = {"signboard": 20, "streetlight": 8, "plantation": 5}
-confs = {"signboard": 0.5, "streetlight": 0.7, "plantation": 0.5}
-
-base_path = os.path.realpath("..")
-
+# Import detector
 from detector.yolov5_object_detector import Inference, init_model
 
 
-def init(vid_path,
+def init_tracker(vid_path,
          label,
          resize_ratio=1,
          confidence=None,
@@ -42,12 +38,11 @@ def init(vid_path,
 
     # Set default disappearence rate
     if disappear_rate == None:
-        # vs_fps = vs.get(cv2.CAP_PROP_FPS)
-        disappear_rate = int(dis_rate[label])
+        disappear_rate = 10 #int(dis_rate[label])
 
     # Set default confidence
     if confidence == None:
-        confidence = float(confs[label])
+        confidence = 0.5
 
     # Initialize centroid tracker
     ct = CentroidTracker(disappear_rate)
@@ -112,7 +107,7 @@ def init(vid_path,
 
                 for (objectID, centroid) in objects.items():
                     # Write the ID of the object to output frame
-                    text = "{}_{}".format(id_alias[label], objectID)
+                    text = "{}_{}".format(label, objectID)
                     cv2.putText(
                         frame,
                         text,
@@ -164,17 +159,11 @@ def init(vid_path,
         )
     )
 
-    # Return unique chainages
-    # print(list(ct.objectsData["chainage"].unique()))
-    # return list(ct.objectsData["chainage"].unique())
-
-
-"""
-Testing instructions
-
-cd video-upload
-
-from tracker.object_tracker import init
-chainages = init(vid_path=r'D:\assets\data\jul16-14-27\video.mp4',label='signboard', chainage_data=r'D:\assets\data\jul16-14-27\video.csv')
-"""
-init(vid_path=r'..\video.mp4',label='signboard')
+if __name__ =="__main__":
+    ap = argparse.ArgumentParser()    
+    ap.add_argument("-v", "--video",  help="input video to track")
+    ap.add_argument("-l", "--label", default="false", help="give the label which you want to track")
+    ap.add_argument("-dr", "--disapper_rate", default=10, help="Based on objects closeness give value, if object are very closer give less value")
+    ap.add_argument("-c", "--confidence", default=0.5, help="minimum confidence of object should have to track")
+    args = vars(ap.parse_args())
+    init_tracker(vid_path=args["video"], label=args["label"], disapper_rate=args["disapper_rate"], confidence=args["confidence"])
