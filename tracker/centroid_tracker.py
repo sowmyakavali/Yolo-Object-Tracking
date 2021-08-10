@@ -2,12 +2,10 @@
 """
 
 # Imports
-from collections import OrderedDict
-from scipy.spatial import distance as dist
 import numpy as np
 import pandas as pd
-
-from lib.mock_chainage import ChainageSequence, setInterval
+from collections import OrderedDict
+from scipy.spatial import distance as dist
 
 
 class CentroidTracker:
@@ -20,27 +18,12 @@ class CentroidTracker:
         self.disappeared = OrderedDict()
 
         # Data Frame to store objects first and last frame along with object id
-        self.columns = [
-            "id",
-            "latitude",
-            "longitude",
-            "chainage",
-            "first_frame",
-            "f_lat",
-            "f_long",
-            "f_chainage",
-            "last_frame",
-            "l_lat",
-            "l_long",
-            "l_chainage",
-        ]
+        self.columns = ["id", "last_frame"]
         self.objectsData = pd.DataFrame(columns=self.columns)
-        # Data Frame to store chinage and corresponding object
-        self.chainageData = pd.DataFrame(columns=["chainage", "id"])
 
         self.maxDisappeared = maxDisappeared
 
-    def register(self, centroid, frameNo, chainage, lat_long):
+    def register(self, centroid, frameNo): 
         self.objects[self.nextObjectID] = centroid
         self.disappeared[self.nextObjectID] = 0
 
@@ -49,17 +32,8 @@ class CentroidTracker:
             [
                 [
                     self.nextObjectID,
-                    np.nan,
-                    np.nan,
-                    np.nan,
                     frameNo,
-                    lat_long[0],
-                    lat_long[1],
-                    chainage,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
+                    # np.nan,
                 ]
             ],
             columns=self.columns,
@@ -68,26 +42,16 @@ class CentroidTracker:
 
         self.nextObjectID += 1
 
-    def deregister(self, objectID, frameNo, chainage, lat_long):
+    def deregister(self, objectID, frameNo): 
         # Update the last frame of the row corresponding to objectid
         
-        self.objectsData.loc[self.objectsData.id == objectID, "latitude"] = lat_long[0]
-        self.objectsData.loc[self.objectsData.id == objectID, "longitude"] = lat_long[1]
-        self.objectsData.loc[self.objectsData.id == objectID, "chainage"] = chainage
 
         self.objectsData.loc[self.objectsData.id == objectID, "last_frame"] = frameNo
-        self.objectsData.loc[self.objectsData.id == objectID, "l_lat"] = lat_long[0]
-        self.objectsData.loc[self.objectsData.id == objectID, "l_long"] = lat_long[1]
-        self.objectsData.loc[self.objectsData.id == objectID, "l_chainage"] = chainage
-
-        # # Update the last chainage of the row corresponding to objectid
-        # self.objectsData.loc[self.objectsData.id ==
-        #                      objectID, 'end_chainage'] = chainage
 
         del self.objects[objectID]
         del self.disappeared[objectID]
 
-    def update(self, rects, frameNo, chainage, lat_long):
+    def update(self, rects, frameNo): 
         """
         Parameters:
         rects: [(startX, startY, endX, endY), ...]
@@ -103,7 +67,7 @@ class CentroidTracker:
 
                 # Deregister if maxDisappeared value is reached
                 if self.disappeared[objectID] > self.maxDisappeared:
-                    self.deregister(objectID, frameNo, chainage, lat_long)
+                    self.deregister(objectID, frameNo) 
 
             # return the set of trackable objects
             return self.objects
@@ -120,7 +84,7 @@ class CentroidTracker:
         # Register objects
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.register(inputCentroids[i], frameNo, chainage, lat_long)
+                self.register(inputCentroids[i], frameNo)
 
         # Update objects centroids
         else:
@@ -176,12 +140,12 @@ class CentroidTracker:
 
                     # Deregister if maxDisappeared threshold is reached
                     if self.disappeared[objectID] > self.maxDisappeared:
-                        self.deregister(objectID, frameNo, chainage, lat_long)
+                        self.deregister(objectID, frameNo) #, chainage, lat_long
             # When input centroids are greater than existing object centroids
             # Register each new input centroid as a trackable object
             else:
                 for col in unusedCols:
-                    self.register(inputCentroids[col], frameNo, chainage, lat_long)
+                    self.register(inputCentroids[col], frameNo) #, chainage, lat_long
 
         # return the set of trackable objects
         return self.objects
